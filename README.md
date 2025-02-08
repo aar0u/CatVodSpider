@@ -1,5 +1,9 @@
-# CatVodSpider
+# CatVodSpider for TVBOX android
 
-### Based on CatVod
+## Based on CatVod
 
-https://github.com/CatVodTVOfficial/CatVodTVSpider
+fork - https://github.com/FongMi/CatVodSpider
+
+spider - https://github.com/bizhangjie/CatVodSpider
+
+jsSpider - https://github.com/jadehh/TVSpider
