@@ -5,6 +5,7 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Build;
+import android.util.Base64;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.ValueCallback;
@@ -15,6 +16,7 @@ import com.github.catvod.spider.Init;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.List;
@@ -163,5 +165,13 @@ public class Util {
             webView.setWebViewClient(client);
             webView.loadUrl(url);
         });
+    }
+
+    public static String base64Decode(String s) {
+        return new String(android.util.Base64.decode(s, Base64.NO_WRAP), Charset.defaultCharset());
+    }
+
+    public static String base64Encode(byte[] bytes) {
+        return new String(android.util.Base64.encode(bytes, Base64.NO_WRAP), Charset.defaultCharset());
     }
 }
