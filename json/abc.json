@@ -28,6 +28,14 @@
       "api": "csp_YHDM",
       "searchable": 1,
       "changeable": 1
+    },
+    {
+      "key": "zxzj",
+      "name": "在线之家",
+      "type": 3,
+      "api": "csp_Zxzj",
+      "searchable": 1,
+      "changeable": 1
     }
   ]
 }
