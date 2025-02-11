@@ -1,6 +1,6 @@
-import puppeteer from "puppeteer";
+import puppeteer, { Browser, Page } from "puppeteer";
 
-let browserInstance = null;
+let browserInstance: Browser | null = null;
 
 async function launchBrowser() {
   if (!browserInstance) {
@@ -20,9 +20,12 @@ export async function closeBrowser() {
   }
 }
 
-export default async function (url, onMediaFound) {
+export default async function (
+  url: string,
+  onMediaFound: (arg0: { url: string; dom: string }) => void,
+) {
   const browser = await launchBrowser();
-  const page = await browser.newPage();
+  const page: Page = await browser.newPage();
   let isClosed = false;
 
   try {
