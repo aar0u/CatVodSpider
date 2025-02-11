@@ -22,7 +22,7 @@ export async function closeBrowser() {
 
 export default async function (
   url: string,
-  onMediaFound: (arg0: { url: string; dom: string }) => void,
+  onMediaFound: (_: { url: string; dom: string }) => void,
 ) {
   const browser = await launchBrowser();
   const page: Page = await browser.newPage();

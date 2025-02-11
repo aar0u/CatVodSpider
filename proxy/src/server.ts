@@ -1,27 +1,21 @@
 import { createServer } from "http";
-import { UrlController } from "./controllers/UrlController.ts";
-import { CloseController } from "./controllers/CloseController.ts";
 
-interface CacheItem {
-  url: string;
-  info: string[];
-  timestamp: number;
-}
-
-export const CACHE: Record<string, CacheItem> = {};
-export const TIME_UNITS = {
-  HOUR: 60 * 60 * 1000,
-  DAY: 24 * 60 * 60 * 1000,
-};
-export const CACHE_TTL = 2 * TIME_UNITS.HOUR;
+import { closeController } from "./controllers/closeController.ts";
+import { urlController } from "./controllers/urlController.ts";
 
 const server = createServer(async (req, res) => {
-  const route = new URL(req.url!, `http://${req.headers.host}`).pathname;
+  if (!req.url || !req.headers.host) {
+    res.writeHead(400, { "Content-Type": "text/plain" });
+    res.end("Invalid request");
+    return;
+  }
+
+  const route = new URL(req.url, `http://${req.headers.host}`).pathname;
 
   if (route.startsWith("/url/")) {
-    await UrlController.handle(req, res);
+    await urlController.handle(req, res);
   } else if (route === "/closebrowser") {
-    CloseController.handle(req, res);
+    closeController.handle(req, res);
   } else {
     res.writeHead(404, { "Content-Type": "text/plain" });
     res.end("Not Found");

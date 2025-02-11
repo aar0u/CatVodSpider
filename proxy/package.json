@@ -5,15 +5,20 @@
   "scripts": {
     "dev": "nodemon src/server.ts",
     "start": "node src/server.ts",
-    "format": "prettier --write \"src/**/*.ts\""
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,scss,md}\"",
+    "lint": "eslint --fix ."
   },
   "dependencies": {
     "cheerio": "^1.0.0",
     "puppeteer": "^24.2.0"
   },
   "devDependencies": {
-    "ts-node": "^10.9.2",
+    "@typescript-eslint/eslint-plugin": "^8.24.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-prettier": "^5.2.3",
     "nodemon": "^3.1.9",
-    "prettier": "^3.5.0"
+    "prettier": "^3.5.0",
+    "ts-node": "^10.9.2"
   }
 }

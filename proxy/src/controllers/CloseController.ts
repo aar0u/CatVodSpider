@@ -1,8 +1,9 @@
 import { IncomingMessage, ServerResponse } from "http";
+
 import { closeBrowser } from "../browser.ts";
 
-export class CloseController {
-  static handle(req: IncomingMessage, res: ServerResponse): void {
+export const closeController = {
+  handle(req: IncomingMessage, res: ServerResponse): void {
     try {
       closeBrowser();
       res.writeHead(200, { "Content-Type": "text/plain" });
@@ -11,5 +12,5 @@ export class CloseController {
       res.writeHead(500, { "Content-Type": "text/plain" });
       res.end(`Error closing browser: ${err}`);
     }
-  }
-}
+  },
+};

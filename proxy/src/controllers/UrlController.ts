@@ -1,14 +1,18 @@
-import * as cheerio from "cheerio";
 import { IncomingMessage, ServerResponse } from "http";
-import browser from "../browser.ts";
-import { CACHE, CACHE_TTL } from "../server.ts";
 
-export class UrlController {
-  static async handle(
-    req: IncomingMessage,
-    res: ServerResponse,
-  ): Promise<void> {
-    const fullPath = new URL(req.url!, `http://${req.headers.host}`).pathname;
+import browser from "../browser.ts";
+import { CACHE, CACHE_TTL } from "../cache/cache.ts";
+import { parserFactory } from "../parsers/parserFactory.ts";
+
+export const urlController = {
+  async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    if (!req.url || !req.headers.host) {
+      res.statusCode = 400;
+      res.end(JSON.stringify({ error: "Invalid request" }));
+      return;
+    }
+
+    const fullPath = new URL(req.url, `http://${req.headers.host}`).pathname;
     const targetUrl = decodeURIComponent(fullPath.split("/url/")[1]);
 
     res.setHeader("Content-Type", "application/json");
@@ -26,10 +30,11 @@ export class UrlController {
     }
 
     try {
+      const parser = parserFactory.createParser(targetUrl);
       await browser(targetUrl, (data) => {
         CACHE[targetUrl] = {
           url: data.url,
-          info: parseInfo(data.dom),
+          info: parser.parse(data.dom),
           timestamp: Date.now(),
         };
         res.end(JSON.stringify(CACHE[targetUrl]));
@@ -37,16 +42,5 @@ export class UrlController {
     } catch (err) {
       res.end(JSON.stringify({ error: err }));
     }
-  }
-}
-
-const parseInfo = (html: string): string[] => {
-  const $ = cheerio.load(html);
-  return [
-    ...new Set(
-      $(".episodes.range a[data-base]")
-        .get()
-        .map((el) => $(el).attr("data-base")?.padStart(3, "0") ?? ""),
-    ),
-  ].sort();
+  },
 };
