@@ -1,7 +1,7 @@
 import { createServer } from "http";
 
-import { closeController } from "./controllers/closeController.ts";
-import { urlController } from "./controllers/urlController.ts";
+import { closeController } from "./controllers/closeController";
+import { urlController } from "./controllers/urlController";
 
 const server = createServer(async (req, res) => {
   if (!req.url || !req.headers.host) {

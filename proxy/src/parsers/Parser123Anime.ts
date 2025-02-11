@@ -1,7 +1,7 @@
 import * as cheerio from "cheerio";
 
-import { BaseParser } from "./BaseParser.ts";
-import { Vod } from "../models/Vod.ts";
+import { BaseParser } from "./BaseParser";
+import { Vod } from "../models/Vod";
 
 export class Parser123Anime implements BaseParser {
   parse(html: string): { vod: Vod; episodes: string[] } {
@@ -12,10 +12,10 @@ export class Parser123Anime implements BaseParser {
     if (desc.length > 0) {
       vod.vodContent = desc
         .text()
-        .trim()
-        .replace(/\t/g, " ") // 只替换制表符为空格
+        .replace(/\t/g, " ")
         .replace(/\s{2,}/g, " ") // 将多个连续空格替换为单个空格
-        .replace(/More$/, ""); // 去掉末尾的 "More"
+        .replace(/More$/, "") // 去掉末尾的 "More"
+        .trim();
     }
 
     // Process meta information
@@ -61,7 +61,7 @@ export class Parser123Anime implements BaseParser {
           .get()
           .map((el) => $(el).attr("data-base")?.padStart(3, "0") ?? ""),
       ),
-    ].sort();
+    ].sort((a, b) => parseInt(a) - parseInt(b));
 
     return { vod, episodes };
   }

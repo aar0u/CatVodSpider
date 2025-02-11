@@ -7,21 +7,24 @@ import com.github.catvod.bean.Vod;
 import com.github.catvod.crawler.Spider;
 import com.github.catvod.crawler.SpiderDebug;
 import com.github.catvod.net.OkHttp;
+import com.github.catvod.utils.Json;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class ABC extends Spider {
-    String domain = "https://123animehub.cc/";
-    int lastEpisode = 56;
+    private static final String PROXY_URL = "http://192.168.31.171:3000/url/";
+    private static final String DOMAIN = "https://123animehub.cc";
+
     public String siteUrl = "";
 
     @Override
@@ -49,85 +52,97 @@ public class ABC extends Spider {
     public String detailContent(List<String> ids) {
         log("detailContent params: ids=" + (ids != null ? ids.toString() : "null"));
         String showName = ids.get(0);
-        String url = domain + "anime/" + showName;
+        String url = PROXY_URL + DOMAIN + showName;
 
-        Document htmlDoc = Jsoup.parse(OkHttp.string(url));
-        Vod vod = new Vod();
-        vod.setVodId(showName);
+        try {
+            JsonObject jsonObject = Json.safeObject(OkHttp.string(url)).getAsJsonObject("info");
+            Vod vod = new Gson().fromJson(jsonObject.get("vod"), Vod.class);
 
-        Element desc = htmlDoc.selectFirst("div.desc");
-        if (desc != null) vod.setVodContent(desc.text().trim());
+            StringBuilder vod_play_url = new StringBuilder();
+            JsonArray episodes = jsonObject.getAsJsonArray("episodes");
+            int total = episodes.size();
+            vod_play_url.append("001").append("$").append(showName).append("#");
+            for (int i = 1; i < total; i++) {
+                String episode = episodes.get(i).getAsString();
+                vod_play_url.append(episode).append("$").append(showName).append("/episode/").append(episode);
 
-        // 处理meta信息
-        Elements metaItems = htmlDoc.select("dl.meta > dt");
-        for (Element dt : metaItems) {
-            String key = dt.text().replace(":", "").trim();
-            Element dd = dt.nextElementSibling();
-
-            if (dd != null && dd.tagName().equals("dd")) {
-                String value = dd.select("a").stream().map(Element::text).collect(Collectors.joining(", "));
-
-                if (value.isEmpty()) value = dd.text().trim();
-
-                switch (key) {
-                    case "Type":
-                        vod.setTypeName(value);
-                        break;
-                    case "Country":
-                        vod.setVodArea(value);
-                        break;
-                    case "Released":
-                        vod.setVodYear(value);
-                        break;
-                    case "Status":
-                        vod.setVodRemarks(value);
-                        break;
-                    case "Genre":
-                        vod.setVodTag(value);
-                        break;
+                if (i < total - 1) {
+                    vod_play_url.append("#");
+                } else {
+                    vod_play_url.append("$$$");
                 }
             }
-        }
 
-        StringBuilder vod_play_url = new StringBuilder();
-        for (int i = 1; i <= lastEpisode; i++) {
-            String episode = String.format("%03d", i);
-            vod_play_url.append(episode).append("$").append("anime/" + showName + "/episode/").append(episode);
-            boolean notLastEpisode = i < lastEpisode;
-            vod_play_url.append(notLastEpisode ? "#" : "$$$");
+            vod.setVodPlayFrom(this.getClass().getSimpleName() + "$$$");
+            vod.setVodPlayUrl(vod_play_url.toString());
+            return Result.string(vod);
+        } catch (JsonSyntaxException | NullPointerException e) {
+            log(e.toString());
         }
-
-        vod.setVodPlayFrom(this.getClass().getSimpleName() + "$$$");
-        vod.setVodPlayUrl(vod_play_url.toString());
-        return Result.string(vod);
+        return Result.string(new Vod());
     }
 
     public String searchContent(String key, boolean quick) {
         log("searchContent params: key=" + key + ", quick=" + quick);
-        String string = OkHttp.string(domain + "search?keyword=" + key);
-        return Result.string(new ArrayList<>());
+        String html = OkHttp.string(DOMAIN + "/search?keyword=" + key);
+
+        List<Vod> list = new ArrayList<>();
+        try {
+            Document doc = Jsoup.parse(html);
+
+            for (Element item : doc.select("div.item")) {
+                // 获取主要链接
+                Element a = item.selectFirst("a[href^='/anime/']");
+                if (a == null) continue;
+
+                // 获取标题（优先data-jtitle，其次图片alt）
+                String title = a.attr("data-jtitle");
+                if (title.isEmpty()) {
+                    Element img = item.selectFirst("img.lazyload");
+                    title = img != null ? img.attr("alt") : "";
+                }
+
+                // 获取图片（优先data-src）
+                String pic = "";
+                Element img = item.selectFirst("img.lazyload");
+                if (img != null) {
+                    pic = img.hasAttr("data-src") ? img.attr("data-src") : img.attr("src");
+                }
+
+                // 获取集数和字幕类型
+                Element epDiv = item.selectFirst("div.ep");
+                Element subSpan = item.selectFirst("span.sub");
+
+                String ep = epDiv != null ? epDiv.text().replaceAll("\n", "").trim() : "";
+                String sub = subSpan != null ? subSpan.text() : "";
+
+                // 构建数据
+                Vod vod = new Vod();
+                vod.setVodId(a.attr("href"));
+                vod.setVodName(title);
+                vod.setVodPic(DOMAIN + pic);
+                vod.setVodRemarks(ep + " " + sub);
+                list.add(vod);
+            }
+        } catch (Exception e) {
+            log(e.toString());
+        }
+
+        return Result.string(list);
     }
 
     public String playerContent(String flag, String id, List<String> vipFlags) {
         log("playerContent params: " + "flag=" + flag + ", id=" + id + ", vipFlags=" + (vipFlags != null ? vipFlags.toString() : "null"));
 
-        String URL = "http://192.168.31.171:3000/?url=" +  domain + id;
-        log(URL);
-        String videoUrl = OkHttp.string(URL, getHeaders(URL));
-        return Result.get().url(videoUrl).toString();
-    }
-
-    protected String UA(String url) {
-        if (url.contains(".vod")) {
-            return "okhttp/4.1.0";
+        String url = PROXY_URL + DOMAIN + id;
+        String videoUrl = "";
+        try {
+            JsonObject ret = Json.safeObject(OkHttp.string(url));
+            log(url + ": " + ret);
+            videoUrl = ret.get("url").getAsString();
+        } catch (Exception e) {
+            log(e.toString());
         }
-        return "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
-    }
-
-    protected HashMap<String, String> getHeaders(String url) {
-        HashMap<String, String> headers = new HashMap<>();
-        headers.put("User-Agent", UA(url));
-        headers.put("referer", domain);
-        return headers;
+        return Result.get().url(videoUrl).toString();
     }
 }

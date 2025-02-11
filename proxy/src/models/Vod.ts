@@ -19,4 +19,22 @@ export class Vod {
       Object.assign(this, init);
     }
   }
+
+  toJSON() {
+    return toSnakeCase({ ...this } as Record<string, unknown>);
+  }
+}
+
+function toSnakeCase(obj: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      const snakeKey = key.replace(
+        /[A-Z]/g,
+        (letter) => `_${letter.toLowerCase()}`,
+      );
+      result[snakeKey] = obj[key];
+    }
+  }
+  return result;
 }

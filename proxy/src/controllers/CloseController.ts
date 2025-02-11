@@ -1,6 +1,6 @@
 import { IncomingMessage, ServerResponse } from "http";
 
-import { closeBrowser } from "../browser.ts";
+import { closeBrowser } from "../browser";
 
 export const closeController = {
   handle(req: IncomingMessage, res: ServerResponse): void {

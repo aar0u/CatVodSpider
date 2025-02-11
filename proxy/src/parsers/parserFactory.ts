@@ -1,5 +1,5 @@
-import { BaseParser } from "./BaseParser.ts";
-import { Parser123Anime } from "./Parser123Anime.ts";
+import { BaseParser } from "./BaseParser";
+import { Parser123Anime } from "./Parser123Anime";
 
 export const parserFactory = {
   createParser(url: string): BaseParser {

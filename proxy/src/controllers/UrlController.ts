@@ -1,8 +1,8 @@
 import { IncomingMessage, ServerResponse } from "http";
 
-import browser from "../browser.ts";
-import { CACHE, CACHE_TTL } from "../cache/cache.ts";
-import { parserFactory } from "../parsers/parserFactory.ts";
+import browser from "../browser";
+import { CACHE, CACHE_TTL } from "../cache/cache";
+import { parserFactory } from "../parsers/parserFactory";
 
 export const urlController = {
   async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {

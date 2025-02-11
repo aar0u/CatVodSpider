@@ -17,7 +17,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.List;
 
 @RunWith(RobolectricTestRunner.class)
 public class ABCTest {
@@ -45,16 +45,16 @@ public class ABCTest {
 
     @Test
     public void searchContent() throws Exception {
-        String content = spider.searchContent("红", false);
+        String content = spider.searchContent("one piece", false);
         JsonObject map = Json.safeObject(content);
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         System.out.println("searchContent--" + gson.toJson(map));
-        Assert.assertTrue(map.getAsJsonArray("list").isEmpty());
+        Assert.assertFalse(map.getAsJsonArray("list").isEmpty());
     }
 
     @Test
     public void detailContent() throws Exception {
-        String content = spider.detailContent(Arrays.asList("pokemon-2023-dub"));
+        String content = spider.detailContent(List.of("/anime/one-piece-dub"));
         JsonObject map = Json.safeObject(content);
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         System.out.println("detailContent--" + gson.toJson(map));
@@ -63,7 +63,7 @@ public class ABCTest {
 
     @Test
     public void playerContent() throws Exception {
-        String content = spider.playerContent("ABC", "anime/pokemon-2023-dub/episode/005", new ArrayList<>());
+        String content = spider.playerContent("ABC", "/anime/pokemon-2023-dub/episode/005", new ArrayList<>());
         JsonObject map = Json.safeObject(content);
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         System.out.println("playerContent--" + gson.toJson(map));

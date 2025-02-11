@@ -17,7 +17,7 @@
       "name": "B & C",
       "type": 3,
       "api": "csp_ABC",
-      "searchable": 0,
+      "searchable": 1,
       "changeable": 0,
       "ext": "https://123animehub.cc"
     },

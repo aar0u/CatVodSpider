@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "nodemon src/server.ts",
-    "start": "node src/server.ts",
+    "dev": "nodemon --exec tsx src/server.ts",
+    "start": "npx tsx src/server.ts",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,scss,md}\"",
     "lint": "eslint --fix ."
   },
@@ -19,6 +19,6 @@
     "eslint-plugin-prettier": "^5.2.3",
     "nodemon": "^3.1.9",
     "prettier": "^3.5.0",
-    "ts-node": "^10.9.2"
+    "tsx": "^4.19.2"
   }
 }

@@ -1,8 +1,14 @@
 import puppeteer, { Browser, Page } from "puppeteer";
 
 let browserInstance: Browser | null = null;
+let lastAccessTime = Date.now();
+let timeoutId: NodeJS.Timeout | null = null;
 
-async function launchBrowser() {
+const MIN = 60 * 1000;
+const TIMEOUT = 20 * MIN;
+const TIMEOUT_PAGE = 2 * MIN;
+
+async function getBrowser() {
   if (!browserInstance) {
     browserInstance = await puppeteer.launch({
       headless: false,
@@ -10,6 +16,8 @@ async function launchBrowser() {
     });
     console.log("Browser launched");
   }
+  lastAccessTime = Date.now();
+  startTimeoutCheck();
   return browserInstance;
 }
 
@@ -18,15 +26,28 @@ export async function closeBrowser() {
     await browserInstance.close();
     browserInstance = null;
   }
+  if (timeoutId) {
+    clearInterval(timeoutId);
+    timeoutId = null;
+  }
+}
+
+function startTimeoutCheck() {
+  if (timeoutId) return;
+  timeoutId = setInterval(async () => {
+    if (Date.now() - lastAccessTime > TIMEOUT) {
+      console.log("Closing browser due to inactivity");
+      await closeBrowser();
+    }
+  }, 60000); // 每分钟检查一次
 }
 
 export default async function (
   url: string,
   onMediaFound: (_: { url: string; dom: string }) => void,
 ) {
-  const browser = await launchBrowser();
+  const browser = await getBrowser();
   const page: Page = await browser.newPage();
-  let isClosed = false;
 
   try {
     // await page.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
@@ -38,8 +59,7 @@ export default async function (
             dom: await page.content(),
           });
           console.log(`Captured ${response.url()}`);
-          if (!isClosed) {
-            isClosed = true;
+          if (!page.isClosed()) {
             page.close();
           }
         }
@@ -59,8 +79,8 @@ export default async function (
 
   setTimeout(async () => {
     if (!page.isClosed()) {
-      console.log("Force closing page after timeout");
+      console.log(`Force closing page after ${TIMEOUT_PAGE}ms`);
       await page.close().catch(() => {});
     }
-  }, 120000);
+  }, TIMEOUT_PAGE);
 }
