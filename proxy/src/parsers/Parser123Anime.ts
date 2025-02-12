@@ -1,9 +1,44 @@
 import * as cheerio from "cheerio";
 
 import { BaseParser } from "./BaseParser";
+import { Playable } from "../models/Playable";
 import { Vod } from "../models/Vod";
 
 export class Parser123Anime implements BaseParser {
+  private playable = new Playable();
+
+  handleResponse = async (response, page, onSuccess, onFail) => {
+    try {
+      const url = response.url().toLowerCase();
+      if (!url.match(/\.(mp4|m3u8|vtt)/)) return false;
+
+      console.log("(m3u8|vtt ", url);
+
+      if (url.endsWith("m3u8") && !this.playable.url) {
+        console.log(`Captured ${url}`);
+        this.playable.url = url;
+      } else if (url.endsWith(".vtt") && url.includes("eng")) {
+        console.log(`Subtitle ${url}`);
+        this.playable.subs = [url];
+      }
+
+      // if (this.playable.url && this.playable.subs) {
+      if (this.playable.url) {
+        const { vod, episodes } = this.parse(await page.content());
+        this.playable.vod = vod;
+        this.playable.episodes = episodes;
+        onSuccess(this.playable);
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      console.error(`Error on capturing: ${error}`);
+      onFail(error);
+      return true;
+    }
+  };
+
   parse(html: string): { vod: Vod; episodes: string[] } {
     const $ = cheerio.load(html);
 
@@ -18,7 +53,6 @@ export class Parser123Anime implements BaseParser {
         .trim();
     }
 
-    // Process meta information
     const metaItems = $("dl.meta > dt");
     metaItems.each((_, dt) => {
       const key = $(dt).text().replace(":", "").trim();

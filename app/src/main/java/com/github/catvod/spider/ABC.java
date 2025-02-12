@@ -2,6 +2,7 @@ package com.github.catvod.spider;
 
 import android.content.Context;
 
+import com.github.catvod.bean.Class;
 import com.github.catvod.bean.Result;
 import com.github.catvod.bean.Vod;
 import com.github.catvod.crawler.Spider;
@@ -18,6 +19,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -40,13 +42,15 @@ public class ABC extends Spider {
 
     public String homeContent(boolean filter) {
         log("homeContent params: filter=" + filter);
-        return OkHttp.string("http://192.168.31.171/file/home.json");
-    }
-
-    public String categoryContent(String tid, String pg, boolean filter, HashMap<String, String> extend) {
-        log("categoryContent params: " + "tid=" + tid + ", pg=" + pg + ", filter=" + filter + ", extend=" + (extend != null ? extend.entrySet() : "null"));
-        List<Vod> list = new ArrayList<>();
-        return Result.string(list);
+        List<Class> classes = new ArrayList<>() {{
+            add(new Class("/genere/Sports", "Sports"));
+            add(new Class("/genere/Action", "Action"));
+        }};
+        List<Vod> list = new ArrayList<>() {{
+            add(new Vod("/anime/pokemon-2023-dub", "Pokemon (2023)", "https://123animehub.cc/imgs/poster/pokemon-2023-dub.jpg", "Dear Bryan"));
+            add(new Vod("/anime/one-piece-dub", "One Piece", "https://123animehub.cc/imgs/poster/one-piece.jpg", "Dear Chloe"));
+        }};
+        return Result.string(classes, list);
     }
 
     public String detailContent(List<String> ids) {
@@ -77,15 +81,38 @@ public class ABC extends Spider {
             vod.setVodPlayUrl(vod_play_url.toString());
             return Result.string(vod);
         } catch (JsonSyntaxException | NullPointerException e) {
+            log(Arrays.toString(e.getStackTrace()));
+        }
+        return "";
+    }
+
+    public String playerContent(String flag, String id, List<String> vipFlags) {
+        log("playerContent params: " + "flag=" + flag + ", id=" + id + ", vipFlags=" + (vipFlags != null ? vipFlags.toString() : "null"));
+        String url = PROXY_URL + DOMAIN + id;
+        String videoUrl = "";
+        try {
+            JsonObject ret = Json.safeObject(OkHttp.string(url));
+            log(url + ": " + ret);
+            videoUrl = ret.get("url").getAsString();
+        } catch (Exception e) {
             log(e.toString());
         }
-        return Result.string(new Vod());
+        return Result.get().url(videoUrl).toString();
+    }
+
+    public String categoryContent(String tid, String pg, boolean filter, HashMap<String, String> extend) {
+        log("categoryContent params: " + "tid=" + tid + ", pg=" + pg + ", filter=" + filter + ", extend=" + (extend != null ? extend.entrySet() : "null"));
+        String html = OkHttp.string(DOMAIN + tid);
+        return Result.string(getVods(html));
     }
 
     public String searchContent(String key, boolean quick) {
         log("searchContent params: key=" + key + ", quick=" + quick);
         String html = OkHttp.string(DOMAIN + "/search?keyword=" + key);
+        return Result.string(getVods(html));
+    }
 
+    private static List<Vod> getVods(String html) {
         List<Vod> list = new ArrayList<>();
         try {
             Document doc = Jsoup.parse(html);
@@ -127,22 +154,6 @@ public class ABC extends Spider {
         } catch (Exception e) {
             log(e.toString());
         }
-
-        return Result.string(list);
-    }
-
-    public String playerContent(String flag, String id, List<String> vipFlags) {
-        log("playerContent params: " + "flag=" + flag + ", id=" + id + ", vipFlags=" + (vipFlags != null ? vipFlags.toString() : "null"));
-
-        String url = PROXY_URL + DOMAIN + id;
-        String videoUrl = "";
-        try {
-            JsonObject ret = Json.safeObject(OkHttp.string(url));
-            log(url + ": " + ret);
-            videoUrl = ret.get("url").getAsString();
-        } catch (Exception e) {
-            log(e.toString());
-        }
-        return Result.get().url(videoUrl).toString();
+        return list;
     }
 }

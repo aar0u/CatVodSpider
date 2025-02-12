@@ -5,7 +5,7 @@ import { CACHE, CACHE_TTL } from "../cache/cache";
 import { parserFactory } from "../parsers/parserFactory";
 
 export const urlController = {
-  async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  async handle(req: IncomingMessage, res: ServerResponse) {
     if (!req.url || !req.headers.host) {
       res.statusCode = 400;
       res.end(JSON.stringify({ error: "Invalid request" }));
@@ -31,16 +31,36 @@ export const urlController = {
 
     try {
       const parser = parserFactory.createParser(targetUrl);
-      await browser(targetUrl, (data) => {
+      let isCompleted = false; // 添加状态锁防止多次 resolve
+
+      const onSuccess = (data) => {
+        if (isCompleted) return;
+        isCompleted = true;
+
         CACHE[targetUrl] = {
-          url: data.url,
-          info: parser.parse(data.dom),
+          item: data,
           timestamp: Date.now(),
         };
         res.end(JSON.stringify(CACHE[targetUrl]));
-      });
+      };
+
+      const onFail = (err) => {
+        if (isCompleted) return;
+        isCompleted = true;
+
+        res.end(
+          JSON.stringify({ error: err instanceof Error ? err.message : err }),
+        );
+      };
+
+      await browser(targetUrl, parser.handleResponse, onSuccess, onFail);
     } catch (err) {
-      res.end(JSON.stringify({ error: err }));
+      console.error(`Error on urlController: ${err}`);
+      res.end(
+        JSON.stringify({
+          error: err instanceof Error ? err.message : "Unknown error",
+        }),
+      );
     }
   },
 };

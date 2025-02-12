@@ -54,7 +54,7 @@ public class ABCTest {
 
     @Test
     public void detailContent() throws Exception {
-        String content = spider.detailContent(List.of("/anime/one-piece-dub"));
+        String content = spider.detailContent(List.of("/anime/fanren-xiu-xian-chuan-3rd-season"));
         JsonObject map = Json.safeObject(content);
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         System.out.println("detailContent--" + gson.toJson(map));

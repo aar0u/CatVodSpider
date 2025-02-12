@@ -1,4 +1,4 @@
-import puppeteer, { Browser, Page } from "puppeteer";
+import puppeteer, { Browser, HTTPResponse, Page } from "puppeteer";
 
 let browserInstance: Browser | null = null;
 let lastAccessTime = Date.now();
@@ -12,7 +12,11 @@ async function getBrowser() {
   if (!browserInstance) {
     browserInstance = await puppeteer.launch({
       headless: false,
-      args: ["--disable-blink-features=AutomationControlled"],
+      args: [
+        "--disable-blink-features=AutomationControlled",
+        "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "--window-size=720,800",
+      ],
     });
     console.log("Browser launched");
   }
@@ -36,51 +40,41 @@ function startTimeoutCheck() {
   if (timeoutId) return;
   timeoutId = setInterval(async () => {
     if (Date.now() - lastAccessTime > TIMEOUT) {
-      console.log("Closing browser due to inactivity");
+      console.log(`Closing browser due to inactivity for ${TIMEOUT}ms`);
       await closeBrowser();
     }
   }, 60000); // 每分钟检查一次
 }
 
-export default async function (
-  url: string,
-  onMediaFound: (_: { url: string; dom: string }) => void,
-) {
+export default async function (url, handler, onSuccess, onFail) {
   const browser = await getBrowser();
   const page: Page = await browser.newPage();
+  page.setViewport(null);
 
-  try {
-    // await page.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-    page.on("response", async (response) => {
-      try {
-        if (response.url().endsWith("m3u8")) {
-          onMediaFound({
-            url: response.url(),
-            dom: await page.content(),
-          });
-          console.log(`Captured ${response.url()}`);
-          if (!page.isClosed()) {
-            page.close();
-          }
-        }
-      } catch (error) {
-        console.error(`Error on capturing: ${error}`);
-      }
-    });
+  const responseHandler = async (response: HTTPResponse) => {
+    const shouldStop = await handler(response, page, onSuccess, onFail);
+    if (shouldStop) {
+      page.off("response", responseHandler);
+      page.close().catch(console.error);
+    }
+  };
 
-    console.log(`Navigate to ${url}`);
-    await page.goto(url, {
-      waitUntil: "networkidle2",
-      timeout: 60000,
-    });
-  } catch (error) {
-    console.error(`Error on browser: ${error}`);
-  }
+  page.on("response", responseHandler);
 
   setTimeout(async () => {
     if (!page.isClosed()) {
+      page.off("response", responseHandler);
       console.log(`Force closing page after ${TIMEOUT_PAGE}ms`);
-      await page.close().catch(() => {});
+      page.close().catch(console.error);
+      onFail("Timeout");
     }
   }, TIMEOUT_PAGE);
+
+  console.log(`Navigate to ${url}`);
+  page
+    .goto(url, {
+      waitUntil: "networkidle2",
+      timeout: 60000,
+    })
+    .catch((error) => console.error(`Error on browser: ${error}`));
 }

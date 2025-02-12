@@ -1,8 +1,5 @@
-import { Vod } from "../models/Vod";
-
 interface CacheItem {
-  url: string;
-  info: { vod: Vod; episodes: string[] };
+  item: unknown;
   timestamp: number;
 }
 

@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "nodemon --exec tsx src/server.ts",
     "start": "npx tsx src/server.ts",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,scss,md}\"",
-    "lint": "eslint --fix ."
+    "lint": "eslint --fix . && prettier --write \"**/*.{ts,tsx,js,jsx,json,css,scss,md}\""
   },
   "dependencies": {
     "cheerio": "^1.0.0",
