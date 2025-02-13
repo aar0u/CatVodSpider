@@ -4,6 +4,7 @@ import android.content.Context;
 
 import com.github.catvod.bean.Class;
 import com.github.catvod.bean.Result;
+import com.github.catvod.bean.Sub;
 import com.github.catvod.bean.Vod;
 import com.github.catvod.crawler.Spider;
 import com.github.catvod.crawler.SpiderDebug;
@@ -59,7 +60,8 @@ public class ABC extends Spider {
         String url = PROXY_URL + DOMAIN + showName;
 
         try {
-            JsonObject jsonObject = Json.safeObject(OkHttp.string(url)).getAsJsonObject("info");
+            String ret = OkHttp.string(url);
+            JsonObject jsonObject = Json.safeObject(ret);
             Vod vod = new Gson().fromJson(jsonObject.get("vod"), Vod.class);
 
             StringBuilder vod_play_url = new StringBuilder();
@@ -89,15 +91,21 @@ public class ABC extends Spider {
     public String playerContent(String flag, String id, List<String> vipFlags) {
         log("playerContent params: " + "flag=" + flag + ", id=" + id + ", vipFlags=" + (vipFlags != null ? vipFlags.toString() : "null"));
         String url = PROXY_URL + DOMAIN + id;
-        String videoUrl = "";
         try {
             JsonObject ret = Json.safeObject(OkHttp.string(url));
             log(url + ": " + ret);
-            videoUrl = ret.get("url").getAsString();
+            String videoUrl = ret.get("url").getAsString();
+            String subUrl = "";
+            if (ret.has("subs")) {
+                subUrl = ret.getAsJsonArray("subs").get(0).getAsString();
+            }
+
+            List<Sub> subs = List.of(Sub.create().name("Eng").ext("vtt").url(subUrl));
+            return Result.get().url(videoUrl).subs(subs).toString();
         } catch (Exception e) {
-            log(e.toString());
+            log(Arrays.toString(e.getStackTrace()));
         }
-        return Result.get().url(videoUrl).toString();
+        return "";
     }
 
     public String categoryContent(String tid, String pg, boolean filter, HashMap<String, String> extend) {
